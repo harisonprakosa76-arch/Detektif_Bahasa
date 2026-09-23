@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misi Detektif Istilah Teknis - Bandeng Presto</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Fredoka -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#035480',
+                            amber: '#f59e0b',
+                            emerald: '#10b981',
+                            rose: '#f43f5e',
+                            indigo: '#6366f1'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Fredoka', 'cursive'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        .font-display {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Canvas Overlay Styles */
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-card-light {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        /* Animations */
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 2s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 3s infinite ease-in-out;
+        }
+
+        /* Drag & Drop Styling */
+        .draggable-item {
+            cursor: grab;
+            transition: all 0.2s ease;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+        }
+        .drop-zone.drag-over {
+            border-color: #38bdf8 !important;
+            background-color: rgba(56, 189, 248, 0.15) !important;
+            transform: scale(1.02);
+        }
+
+        /* Word Hunt Highlight */
+        .word-hunt-span {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 2px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .word-hunt-span:hover {
+            background-color: rgba(56, 189, 248, 0.2);
+            border-color: #38bdf8;
+        }
+        .word-hunt-span.correct {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            border-color: #059669 !important;
+            font-weight: bold;
+        }
+        .word-hunt-span.wrong {
+            background-color: #ef4444 !important;
+            color: #ffffff !important;
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        /* Keypad Styles for Level 5 */
+        .keypad-btn {
+            transition: all 0.15s ease;
+        }
+        .keypad-btn:active {
+            transform: scale(0.92);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative bg-slate-900 text-slate-100">
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Top HUD Navigation Bar -->
+    <header class="sticky top-0 z-40 glass-card px-4 py-3 border-b border-slate-700">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-900 font-bold text-xl shadow-lg">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <div>
+                    <h1 class="font-display text-lg md:text-xl font-bold tracking-wide text-amber-400">
+                        DETEKTIF BAHASA
+                    </h1>
+                    <p class="text-xs text-slate-400">Misi: Bandeng Presto LHO</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar (Lives, Score, Progress) -->
+            <div class="flex items-center gap-4 sm:gap-6 bg-slate-800/80 px-4 py-2 rounded-2xl border border-slate-700">
+                <!-- Lives -->
+                <div class="flex items-center gap-1.5" title="Nyawa Detektif">
+                    <span class="text-xs text-slate-400 font-semibold mr-1 hidden sm:inline">NYAWA:</span>
+                    <div id="livesContainer" class="flex gap-1 text-rose-500 text-lg md:text-xl">
+                        <i class="fa-solid fa-heart"></i>
+                        <i class="fa-solid fa-heart"></i>
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                </div>
+
+                <div class="h-6 w-[1px] bg-slate-700"></div>
+
+                <!-- Score -->
+                <div class="flex items-center gap-2" title="Skor Saat Ini">
+                    <i class="fa-solid fa-star text-amber-400 text-lg"></i>
+                    <span id="scoreDisplay" class="font-display font-bold text-lg md:text-xl text-amber-300">0</span>
+                </div>
+
+                <div class="h-6 w-[1px] bg-slate-700"></div>
+
+                <!-- Level Indicator -->
+                <div class="flex items-center gap-2">
+                    <span id="levelBadge" class="bg-sky-500/20 text-sky-400 text-xs font-bold px-2.5 py-1 rounded-full border border-sky-500/30">
+                        LEVEL <span id="currentLevelNum">1</span>/5
+                    </span>
+                </div>
+            </div>
+
+            <!-- Hint Button & Audio Toggle -->
+            <div class="flex items-center gap-2">
+                <button id="audioBtn" onclick="toggleAudio()" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center border border-slate-700 transition" title="Mute/Unmute Suara">
+                    <i id="audioIcon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button id="hintBtn" onclick="useHint()" class="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold px-3 py-2 rounded-xl border border-amber-500/40 transition">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span class="hidden md:inline">PETUNJUK</span> (-5 Poin)
+                </button>
+            </div>
+        </div>
+
+        <!-- Level Progress Bar -->
+        <div class="max-w-6xl mx-auto mt-2">
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div id="progressBar" class="bg-gradient-to-r from-sky-500 to-amber-400 h-1.5 rounded-full transition-all duration-500" style="width: 20%"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Viewport -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center relative z-20">
+        
+        <!-- Feedback Banner Modal / Notification -->
+        <div id="feedbackBanner" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-50 max-w-lg w-11/12 p-4 rounded-2xl shadow-2xl border transition-all duration-300">
+            <div class="flex items-start gap-3">
+                <div id="feedbackIcon" class="text-2xl mt-0.5"></div>
+                <div class="flex-1">
+                    <h4 id="feedbackTitle" class="font-display font-bold text-lg"></h4>
+                    <p id="feedbackText" class="text-sm mt-1 leading-relaxed"></p>
+                </div>
+                <button onclick="closeFeedback()" class="text-slate-400 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Game Content Container -->
+        <div id="gameContent" class="glass-card rounded-3xl p-5 md:p-8 min-h-[500px] flex flex-col justify-between">
+            <!-- Content will be dynamically populated by JavaScript -->
+        </div>
+
+    </main>
+
+    <!-- Material / Study Modal -->
+    <div id="materialModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-card max-w-2xl w-full rounded-3xl p-6 md:p-8 border border-slate-700 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-700">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-book-bookmark text-amber-400 text-2xl"></i>
+                    <h3 class="font-display text-xl font-bold text-amber-300">Panduan Detektif: Istilah Teknis LHO</h3>
+                </div>
+                <button onclick="toggleMaterialModal(false)" class="text-slate-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="mt-4 space-y-4 text-slate-200 text-sm leading-relaxed">
+                <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                    <h4 class="font-bold text-sky-400 mb-1">🔍 Apa itu Istilah Teknis?</h4>
+                    <p>Istilah teknis (kata kajian) adalah kata atau ungkapan khusus yang digunakan dalam bidang keilmuan atau topik tertentu secara tepat dan memiliki makna spesifik.</p>
+                </div>
+                <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                    <h4 class="font-bold text-amber-400 mb-1">🐟 Istilah Teknis dalam Pengolahan Bandeng Presto:</h4>
+                    <ul class="list-disc list-inside space-y-1 text-slate-300">
+                        <li><strong class="text-white">Presto:</strong> Teknik memasak menggunakan uap air bertekanan tinggi dalam panci tertutup rapat.</li>
+                        <li><strong class="text-white">Tekanan:</strong> Besaran gaya fisik yang diberikan pada ruang tertutup saat proses pengolahan.</li>
+                        <li><strong class="text-white">Suhu:</strong> Derajat panas yang diatur secara tepat agar duri ikan melunak tanpa merusak kandungan gizi.</li>
+                        <li><strong class="text-white">Protein:</strong> Zat gizi penting yang terkandung dalam daging ikan bandeng.</li>
+                        <li><strong class="text-white">Sterilisasi / Pengawetan:</strong> Proses mematikan mikroorganisme agar produk tahan lebih lama.</li>
+                    </ul>
+                </div>
+                <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                    <h4 class="font-bold text-emerald-400 mb-1">⚡ Membedakan dengan Kata Umum:</h4>
+                    <p>Kata seperti <span class="text-rose-300">"gurih"</span>, <span class="text-rose-300">"enak"</span>, atau <span class="text-rose-300">"lezat"</span> adalah kata sifat umum yang subjektif (kesan rasa), bukan istilah teknis ilmiah dalam pengolahan pangan.</p>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="toggleMaterialModal(false)" class="bg-sky-600 hover:bg-sky-500 text-white font-bold px-6 py-2.5 rounded-xl transition">
+                    Paham, Lanjutkan Misi!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="glass-card py-3 px-4 border-t border-slate-800 text-center text-xs text-slate-400 z-10">
+        <p>🎯 Media Pembelajaran Interaktif Bahasa Indonesia Kelas VIII SMP — Teks Laporan Hasil Observasi (LHO)</p>
+    </footer>
+
+    <script>
+        // Web Audio API Synthesizer for SFX
+        const AudioFX = {
+            ctx: null,
+            muted: false,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            },
+            playWrong() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.linearRampToValueAtTime(130, now + 0.25);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            },
+            playLevelUp() {
+                if (this.muted) return;
+                this.init();
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + (i * 0.1);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                });
+            },
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        };
+
+        function toggleAudio() {
+            AudioFX.muted = !AudioFX.muted;
+            const icon = document.getElementById('audioIcon');
+            if (AudioFX.muted) {
+                icon.className = 'fa-solid fa-volume-xmark text-rose-400';
+            } else {
+                icon.className = 'fa-solid fa-volume-high text-slate-300';
+                AudioFX.playClick();
+            }
+        }
+
+        // Game State Engine
+        const gameState = {
+            currentLevel: 1,
+            score: 0,
+            lives: 3,
+            foundTechnicalTermsCount: 0,
+            totalCorrectAnswers: 0,
+            totalAttempts: 0,
+            levelMistakes: 0,
+            level1TargetsFound: [],
+            level2TargetsFound: [],
+            level3CorrectSorted: 0,
+            level4Matches: {},
+            level5PuzzlesSolved: 0,
+            level5Passcode: [],
+            escapeCodeTarget: ['3', 'B', 'P', '8', 'T']
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createConfetti() {
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.7) * 12,
+                    size: Math.random() * 8 + 4,
+                    color: ['#f59e0b', '#10b981', '#0284c7', '#ec4899', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                    alpha: 1,
+                    decay: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.2; // gravity
+                p.alpha -= p.decay;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                ctx.restore();
+
+                if (p.alpha <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+
+        function updateHUD() {
+            document.getElementById('scoreDisplay').innerText = gameState.score;
+            document.getElementById('currentLevelNum').innerText = gameState.currentLevel;
+            document.getElementById('progressBar').style.width = `${(gameState.currentLevel / 5) * 100}%`;
+
+            // Update Hearts
+            const livesContainer = document.getElementById('livesContainer');
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < gameState.lives) {
+                    livesContainer.innerHTML += `<i class="fa-solid fa-heart transition-all duration-300"></i>`;
+                } else {
+                    livesContainer.innerHTML += `<i class="fa-solid fa-heart text-slate-700"></i>`;
+                }
+            }
+        }
+
+        function showFeedback(isCorrect, title, message) {
+            const banner = document.getElementById('feedbackBanner');
+            const icon = document.getElementById('feedbackIcon');
+            const titleEl = document.getElementById('feedbackTitle');
+            const textEl = document.getElementById('feedbackText');
+
+            banner.classList.remove('hidden', 'bg-emerald-950/90', 'border-emerald-500', 'text-emerald-200', 'bg-rose-950/90', 'border-rose-500', 'text-rose-200');
+
+            if (isCorrect) {
+                AudioFX.playCorrect();
+                createConfetti();
+                banner.classList.add('bg-emerald-950/90', 'border-emerald-500', 'text-emerald-100');
+                icon.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i>`;
+            } else {
+                AudioFX.playWrong();
+                banner.classList.add('bg-rose-950/90', 'border-rose-500', 'text-rose-100');
+                icon.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i>`;
+            }
+
+            titleEl.innerText = title;
+            textEl.innerText = message;
+
+            banner.classList.remove('hidden');
+        }
+
+        function closeFeedback() {
+            document.getElementById('feedbackBanner').classList.add('hidden');
+        }
+
+        function handleMistake(penaltyMsg) {
+            gameState.lives--;
+            gameState.score = Math.max(0, gameState.score - 3);
+            gameState.levelMistakes++;
+            updateHUD();
+
+            if (gameState.lives <= 0) {
+                renderGameOver();
+            } else {
+                showFeedback(false, '⚠️ Jawaban Belum Tepat (-3 Poin & -1 Nyawa)', penaltyMsg);
+            }
+        }
+
+        function addScore(amount) {
+            gameState.score += amount;
+            gameState.totalCorrectAnswers++;
+            updateHUD();
+        }
+
+        function useHint() {
+            AudioFX.playClick();
+            if (gameState.score < 5) {
+                showFeedback(false, 'Poin Tidak Cukup!', 'Kamu membutuhkan minimal 5 poin untuk membuka petunjuk.');
+                return;
+            }
+
+            gameState.score -= 5;
+            updateHUD();
+
+            const hints = {
+                1: '💡 PETUNJUK LEVEL 1: Istilah teknis berkaitan dengan konsep ilmiah, ilmu gizi, fisika, atau proses fisik seperti: presto, suhu, tekanan, tekstur, pengawetan.',
+                2: '💡 PETUNJUK LEVEL 2: Cari kata kerja/benda ilmiah dalam paragraf LHO seperti "teknik", "tekanan", "suhu", "proses", "pemasakan".',
+                3: '💡 PETUNJUK LEVEL 3: Kata-kata berbau rasa subjektif seperti "gurih", "lezat", "enak" tergolong kata umum (Bukan Istilah Teknis).',
+                4: '💡 PETUNJUK LEVEL 4: Pasangkan besaran fisika (Suhu -> Ukuran panas, Tekanan -> Gaya per luas) & zat gizi (Protein -> Zat gizi).',
+                5: '💡 PETUNJUK LEVEL 5: Baca kalimat LHO dengan teliti dan analisis fungsi teknis setiap kata sesuai konteks sains/kuliner.'
+            };
+
+            showFeedback(true, '💡 Petunjuk Detektif', hints[gameState.currentLevel] || 'Teliti setiap opsi dengan cermat!');
+        }
+
+        function toggleMaterialModal(show) {
+            AudioFX.playClick();
+            const modal = document.getElementById('materialModal');
+            if (show) modal.classList.remove('hidden');
+            else modal.classList.add('hidden');
+        }
+
+        function renderLevel1() {
+            gameState.currentLevel = 1;
+            gameState.levelMistakes = 0;
+            gameState.level1TargetsFound = [];
+            updateHUD();
+
+            const wordsData = [
+                { word: 'presto', isTechnical: true, desc: 'Teknik memasak bertekanan tinggi.' },
+                { word: 'tekanan', isTechnical: true, desc: 'Besaran gaya fisik dalam panci pengolah.' },
+                { word: 'suhu', isTechnical: true, desc: 'Derajat panas saat pengolahan.' },
+                { word: 'tekstur', isTechnical: true, desc: 'Sifat kehalusan/kerepuhan fisik duri.' },
+                { word: 'pengawetan', isTechnical: true, desc: 'Metode melindung pangan dari mikroba.' },
+                { word: 'gurih', isTechnical: false, desc: 'Kata umum penunjuk rasa subjektif.' },
+                { word: 'ikan', isTechnical: false, desc: 'Kata umum penunjuk bahan makanan.' },
+                { word: 'duri', isTechnical: false, desc: 'Kata umum bagian tubuh ikan.' },
+                { word: 'makanan', isTechnical: false, desc: 'Kata umum penunjuk konsumsi.' },
+                { word: 'enak', isTechnical: false, desc: 'Kata umum persepsi penilaian rasa.' }
+            ];
+
+            // Shuffle array
+            const shuffled = [...wordsData].sort(() => Math.random() - 0.5);
+
+            const content = document.getElementById('gameContent');
+            content.innerHTML = `
+                <div>
+                    <!-- Header Mission -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-700">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                                🟢 MISI 1: TANGKAP ISTILAH TEKNIS
+                            </span>
+                            <h2 class="font-display text-2xl font-bold mt-2 text-white">Kenalan dengan Bandeng Presto</h2>
+                            <p class="text-xs md:text-sm text-slate-300 mt-1">
+                                Klik/tap kata-kata di piring saji yang termasuk <strong class="text-amber-300">Istilah Teknis</strong> dalam pengolahan Bandeng Presto!
+                            </p>
+                        </div>
+                        <button onclick="toggleMaterialModal(true)" class="bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 font-semibold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-2 shrink-0">
+                            <i class="fa-solid fa-book"></i> Baca Buku Pelajaran
+                        </button>
+                    </div>
+
+                    <!-- Visual Culinary Banner -->
+                    <div class="bg-gradient-to-r from-slate-800 to-slate-850 p-4 rounded-2xl border border-slate-700 mb-6 flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center text-amber-400 text-3xl shrink-0 border border-amber-500/30">
+                            🐟
+                        </div>
+                        <div class="text-xs md:text-sm text-slate-300">
+                            <strong class="text-amber-300">Latar Belakang Observasi:</strong> Bandeng Presto adalah produk olahan khas Nusantara. Untuk melaporkannya secara ilmiah (LHO), kita memerlukan <em>istilah teknis</em> khusus yang menjelaskan proses pengolahannya!
+                        </div>
+                    </div>
+
+                    <!-- Grid Word Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5" id="level1Grid">
+                        ${shuffled.map((item, idx) => `
+                            <button id="l1-btn-${idx}" onclick="checkLevel1Word(${idx}, '${item.word}', ${item.isTechnical}, '${item.desc}')" 
+                                class="p-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700 text-center font-display font-semibold text-slate-200 text-base shadow-md hover:scale-105 transition-all duration-200 flex flex-col items-center justify-center gap-2">
+                                <i class="fa-solid fa-cookie text-slate-500 text-lg"></i>
+                                <span>${item.word}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Footer Action -->
+                <div class="mt-8 pt-4 border-t border-slate-700/60 flex justify-between items-center">
+                    <div class="text-xs text-slate-400">
+                        Progres: <span id="l1Count" class="font-bold text-amber-400">0</span>/5 Istilah Teknis Ditemukan
+                    </div>
+                    <button id="l1NextBtn" onclick="nextLevel()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 animate-bounce">
+                        Lanjut ke Misi 2 <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function checkLevel1Word(idx, word, isTechnical, desc) {
+            AudioFX.playClick();
+            const btn = document.getElementById(`l1-btn-${idx}`);
+
+            if (gameState.level1TargetsFound.includes(word)) return;
+
+            if (isTechnical) {
+                gameState.level1TargetsFound.push(word);
+                btn.className = "p-4 rounded-2xl bg-emerald-600 border border-emerald-400 text-white text-center font-display font-bold text-base shadow-lg cursor-default";
+                btn.innerHTML = `<i class="fa-solid fa-circle-check text-xl"></i><span>${word}</span>`;
+                addScore(10);
+                showFeedback(true, '✅ Benar! Istilah Teknis!', `"${word}" tergolong istilah teknis: ${desc}`);
+
+                document.getElementById('l1Count').innerText = gameState.level1TargetsFound.length;
+
+                if (gameState.level1TargetsFound.length >= 5) {
+                    let bonus = gameState.levelMistakes === 0 ? 30 : 0;
+                    addScore(20 + bonus);
+                    AudioFX.playLevelUp();
+                    showFeedback(true, '🎉 MISI 1 SELESAI!', `Kamu berhasil mengidentifikasi 5 istilah teknis! ${bonus ? '+30 Bonus Tanpa Salah!' : ''}`);
+                    document.getElementById('l1NextBtn').classList.remove('hidden');
+                }
+            } else {
+                btn.className = "p-4 rounded-2xl bg-rose-600/50 border border-rose-500 text-white text-center font-display font-semibold text-base shadow-md cursor-not-allowed opacity-60";
+                handleMistake(`"${word}" tergolong kata umum (bukan istilah teknis khusus LHO): ${desc}`);
+            }
+        }
+
+        function renderLevel2() {
+            gameState.currentLevel = 2;
+            gameState.levelMistakes = 0;
+            gameState.level2TargetsFound = [];
+            updateHUD();
+
+            const textParagraph = [
+                { text: "Bandeng", isTarget: false },
+                { text: "presto", isTarget: false },
+                { text: "merupakan", isTarget: false },
+                { text: "olahan", isTarget: false },
+                { text: "ikan", isTarget: false },
+                { text: "bandeng", isTarget: false },
+                { text: "yang", isTarget: false },
+                { text: "dimasak", isTarget: false },
+                { text: "menggunakan", isTarget: false },
+                { text: "teknik", isTarget: true, key: "teknik", desc: "Metode spesifik yang diterapkan dalam proses produksi." },
+                { text: "bertekanan", isTarget: true, key: "tekanan", desc: "Gaya per satuan luas yang dihasilkan uap air dalam ruang tertutup." },
+                { text: "tinggi.", isTarget: false },
+                { text: "Proses", isTarget: true, key: "proses", desc: "Urutan tahapan pengolahan dari awal hingga akhir." },
+                { text: "tersebut", isTarget: false },
+                { text: "membantu", isTarget: false },
+                { text: "melunakkan", isTarget: false },
+                { text: "duri", isTarget: false },
+                { text: "ikan.", isTarget: false },
+                { text: "Pengolahan", isTarget: false },
+                { text: "dilakukan", isTarget: false },
+                { text: "dengan", isTarget: false },
+                { text: "memperhatikan", isTarget: false },
+                { text: "suhu", isTarget: true, key: "suhu", desc: "Tingkat derajat panas yang diukur secara presisi saat memasak." },
+                { text: "dan", isTarget: false },
+                { text: "tekanan", isTarget: true, key: "tekanan2", desc: "Gaya mekanis dalam panci agar tulang lunak sempurna." },
+                { text: "selama", isTarget: false },
+                { text: "proses", isTarget: false },
+                { text: "pemasakan.", isTarget: true, key: "pemasakan", desc: "Aktivitas pemanasan bahan makanan secara terukur." }
+            ];
+
+            const content = document.getElementById('gameContent');
+            content.innerHTML = `
+                <div>
+                    <!-- Header -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-700">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-sky-400 bg-sky-500/10 px-3 py-1 rounded-full border border-sky-500/20">
+                                🔍 MISI 2: WORD HUNT
+                            </span>
+                            <h2 class="font-display text-2xl font-bold mt-2 text-white">Buru Istilah Tersembunyi</h2>
+                            <p class="text-xs md:text-sm text-slate-300 mt-1">
+                                Cermati paragraf LHO di bawah ini. Klik langsung pada kata-kata yang merupakan <strong class="text-sky-300">Istilah Teknis</strong>!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Text Box -->
+                    <div class="bg-slate-800/80 p-6 md:p-8 rounded-3xl border border-slate-700 leading-relaxed text-base md:text-lg text-slate-200 shadow-inner">
+                        <i class="fa-solid fa-quote-left text-sky-500/30 text-3xl mb-2 block"></i>
+                        <p id="l2Paragraph" class="leading-loose">
+                            ${textParagraph.map((item, idx) => `
+                                <span id="l2-word-${idx}" onclick="checkLevel2Word(${idx}, ${item.isTarget}, '${item.key || ''}', '${item.desc || ''}')" class="word-hunt-span">
+                                    ${item.text}
+                                </span>
+                            `).join('')}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Footer Action -->
+                <div class="mt-8 pt-4 border-t border-slate-700/60 flex justify-between items-center">
+                    <div class="text-xs text-slate-400">
+                        Target Ditemukan: <span id="l2Count" class="font-bold text-sky-400">0</span>/5 Kata
+                    </div>
+                    <button id="l2NextBtn" onclick="nextLevel()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 animate-bounce">
+                        Lanjut ke Misi 3 <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        function checkLevel2Word(idx, isTarget, key, desc) {
+            AudioFX.playClick();
+            const span = document.getElementById(`l2-word-${idx}`);
+
+            if (span.classList.contains('correct')) return;
+
+            if (isTarget) {
+                if (!gameState.level2TargetsFound.includes(key)) {
+                    gameState.level2TargetsFound.push(key);
+                }
+                span.classList.add('correct');
+                addScore(10);
+                showFeedback(true, '🎯 Tepat Sekali!', `"${span.innerText.trim()}" adalah istilah teknis: ${desc}`);
+
+                document.getElementById('l2Count').innerText = gameState.level2TargetsFound.length;
+
+                if (gameState.level2TargetsFound.length >= 5) {
+                    let bonus = gameState.levelMistakes === 0 ? 30 : 0;
+                    addScore(20 + bonus);
+                    AudioFX.playLevelUp();
+                    showFeedback(true, '🎉 MISI 2 SELESAI!', `Kamu berhasil memburu semua istilah teknis dalam paragraf LHO! ${bonus ? '+30 Bonus Tanpa Salah!' : ''}`);
+                    document.getElementById('l2NextBtn').classList.remove('hidden');
+                }
+            } else {
+                span.classList.add('wrong');
+                setTimeout(() => span.classList.remove('wrong'), 600);
+                handleMistake(`Kata "${span.innerText.trim()}" adalah kata umum dalam struktur kalimat biasa, bukan istilah teknis observasi.`);
+            }
+        }
+
+        function renderLevel3() {
+            gameState.currentLevel = 3;
+            gameState.levelMistakes = 0;
+            gameState.level3CorrectSorted = 0;
+            updateHUD();
+
+            const cards = [
+                { id: 'c1', text: 'tekanan', category: 'teknis', desc: 'Besaran fisika ruang tertutup.' },
+                { id: 'c2', text: 'suhu', category: 'teknis', desc: 'Ukuran panas derajat Celcius.' },
+                { id: 'c3', text: 'fermentasi', category: 'teknis', desc: 'Proses penguraian hayati oleh mikroba.' },
+                { id: 'c4', text: 'tekstur', category: 'teknis', desc: 'Sifat permukaan/keadaan fisik.' },
+                { id: 'c5', text: 'protein', category: 'teknis', desc: 'Zat gizi asam amino.' },
+                { id: 'c6', text: 'presto', category: 'teknis', desc: 'Teknik masak uap tekanan tinggi.' },
+                { id: 'c7', text: 'lezat', category: 'umum', desc: 'Penilaian rasa subjektif.' },
+                { id: 'c8', text: 'gurih', category: 'umum', desc: 'Pengecap cit rasa lidah.' },
+                { id: 'c9', text: 'enak', category: 'umum', desc: 'Opini umum kenikmatan.' },
+                { id: 'c10', text: 'makanan', category: 'umum', desc: 'Kata benda umum.' }
+            ];
+
+            const shuffledCards = [...cards].sort(() => Math.random() - 0.5);
+
+            const content = document.getElementById('gameContent');
+            content.innerHTML = `
+                <div>
+                    <!-- Header -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-700">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+                                🧪 MISI 3: KELOMPOKKAN ISTILAH
+                            </span>
+                            <h2 class="font-display text-2xl font-bold mt-2 text-white">Istilah Teknis atau Bukan?</h2>
+                            <p class="text-xs md:text-sm text-slate-300 mt-1">
+                                Tarik (drag) atau klik kartu kata lalu pilih keranjang yang tepat!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Drag Cards Source Area -->
+                    <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700 mb-6 min-h-[90px] flex flex-wrap gap-2.5 items-center justify-center" id="cardSourceArea">
+                        ${shuffledCards.map(c => `
+                            <div id="${c.id}" 
+                                 draggable="true" 
+                                 ondragstart="handleDragStart(event, '${c.id}', '${c.category}', '${c.desc}')"
+                                 onclick="handleClickCard('${c.id}', '${c.category}', '${c.desc}')"
+                                 class="draggable-item bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white px-4 py-2 rounded-xl font-display font-semibold text-sm shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-grip-dots-vertical text-slate-400 text-xs"></i>
+                                <span>${c.text}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Drop Baskets -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Basket 1: Teknis -->
+                        <div id="basketTeknis" 
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)"
+                             ondrop="handleDrop(event, 'teknis')"
+                             class="drop-zone border-2 border-dashed border-emerald-500/50 bg-emerald-950/20 rounded-3xl p-5 min-h-[200px] transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-3 text-emerald-400 font-display font-bold text-lg border-b border-emerald-500/30 pb-2">
+                                    <i class="fa-solid fa-flask text-xl"></i>
+                                    <span>🧪 ISTILAH TEKNIS LHO</span>
+                                </div>
+                                <div id="teknisDropContent" class="flex flex-wrap gap-2"></div>
+                            </div>
+                            <p class="text-xs text-emerald-400/60 mt-4 text-center italic">Letakkan kata khusus keilmuan/proses di sini</p>
+                        </div>
+
+                        <!-- Basket 2: Umum -->
+                        <div id="basketUmum" 
+                             ondragover="handleDragOver(event)" 
+                             ondragleave="handleDragLeave(event)"
+                             ondrop="handleDrop(event, 'umum')"
+                             class="drop-zone border-2 border-dashed border-amber-500/50 bg-amber-950/20 rounded-3xl p-5 min-h-[200px] transition-all flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-3 mb-3 text-amber-400 font-display font-bold text-lg border-b border-amber-500/30 pb-2">
+                                    <i class="fa-solid fa-utensils text-xl"></i>
+                                    <span>🍽️ BUKAN ISTILAH TEKNIS</span>
+                                </div>
+                                <div id="umumDropContent" class="flex flex-wrap gap-2"></div>
+                            </div>
+                            <p class="text-xs text-amber-400/60 mt-4 text-center italic">Letakkan kata sifat umum/opini rasa di sini</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Action -->
+                <div class="mt-8 pt-4 border-t border-slate-700/60 flex justify-between items-center">
+                    <div class="text-xs text-slate-400">
+                        Selesai Dikelompokkan: <span id="l3Count" class="font-bold text-indigo-400">0</span>/10 Kata
+                    </div>
+                    <button id="l3NextBtn" onclick="nextLevel()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 animate-bounce">
+                        Lanjut ke Misi 4 <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        let activeDraggedCard = null;
+
+        function handleDragStart(e, cardId, category, desc) {
+            activeDraggedCard = { cardId, category, desc };
+            e.dataTransfer.setData('text/plain', JSON.stringify({ cardId, category, desc }));
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, targetBasket) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+
+            if (!activeDraggedCard) return;
+            processCategoryDrop(activeDraggedCard.cardId, activeDraggedCard.category, activeDraggedCard.desc, targetBasket);
+            activeDraggedCard = null;
+        }
+
+        // Tap fallback for touch devices
+        let selectedCardForClick = null;
+
+        function handleClickCard(cardId, category, desc) {
+            AudioFX.playClick();
+            if (selectedCardForClick && selectedCardForClick.cardId === cardId) {
+                selectedCardForClick = null;
+                document.getElementById(cardId).classList.remove('ring-4', 'ring-sky-400');
+                return;
+            }
+
+            if (selectedCardForClick) {
+                document.getElementById(selectedCardForClick.cardId).classList.remove('ring-4', 'ring-sky-400');
+            }
+
+            selectedCardForClick = { cardId, category, desc };
+            document.getElementById(cardId).classList.add('ring-4', 'ring-sky-400');
+            showFeedback(true, '👆 Kartu Dipilih!', 'Sekarang klik keranjang "🧪 ISTILAH TEKNIS" atau "🍽️ BUKAN ISTILAH TEKNIS" di bawah.');
+
+            // Add direct click handlers on baskets when card is clicked
+            document.getElementById('basketTeknis').onclick = () => {
+                if (selectedCardForClick) {
+                    processCategoryDrop(selectedCardForClick.cardId, selectedCardForClick.category, selectedCardForClick.desc, 'teknis');
+                    selectedCardForClick = null;
+                }
+            };
+            document.getElementById('basketUmum').onclick = () => {
+                if (selectedCardForClick) {
+                    processCategoryDrop(selectedCardForClick.cardId, selectedCardForClick.category, selectedCardForClick.desc, 'umum');
+                    selectedCardForClick = null;
+                }
+            };
+        }
+
+        function processCategoryDrop(cardId, actualCategory, desc, targetBasket) {
+            const el = document.getElementById(cardId);
+            if (!el) return;
+
+            if (actualCategory === targetBasket) {
+                const dropContainer = targetBasket === 'teknis' ? document.getElementById('teknisDropContent') : document.getElementById('umumDropContent');
+                
+                el.onclick = null;
+                el.removeAttribute('draggable');
+                el.className = targetBasket === 'teknis' 
+                    ? "bg-emerald-600/80 border border-emerald-400 text-white px-3 py-1.5 rounded-xl font-display text-xs flex items-center gap-1.5"
+                    : "bg-amber-600/80 border border-amber-400 text-white px-3 py-1.5 rounded-xl font-display text-xs flex items-center gap-1.5";
+                
+                dropContainer.appendChild(el);
+                
+                addScore(10);
+                gameState.level3CorrectSorted++;
+                showFeedback(true, '✅ Pengelompokan Tepat!', `Hebat! Kata tersebut dimasukkan ke tempat yang benar: ${desc}`);
+
+                document.getElementById('l3Count').innerText = gameState.level3CorrectSorted;
+
+                if (gameState.level3CorrectSorted >= 10) {
+                    let bonus = gameState.levelMistakes === 0 ? 30 : 0;
+                    addScore(20 + bonus);
+                    AudioFX.playLevelUp();
+                    showFeedback(true, '🎉 MISI 3 SELESAI!', `Hebat! Kamu berhasil mengelompokkan 10 istilah dengan akurat! ${bonus ? '+30 Bonus Tanpa Salah!' : ''}`);
+                    document.getElementById('l3NextBtn').classList.remove('hidden');
+                }
+            } else {
+                handleMistake(`Kata tersebut tidak cocok di keranjang ${targetBasket.toUpperCase()}. ${desc}`);
+            }
+        }
+
+        function renderLevel4() {
+            gameState.currentLevel = 4;
+            gameState.levelMistakes = 0;
+            gameState.level4Matches = {};
+            updateHUD();
+
+            const pairs = [
+                { id: 'm1', term: 'Tekanan', definition: 'Gaya yang bekerja pada suatu luas permukaan panci' },
+                { id: 'm2', term: 'Suhu', definition: 'Ukuran derajat tingkat panas atau dingin saat memasak' },
+                { id: 'm3', term: 'Protein', definition: 'Zat gizi penyusun jaringan tubuh yang ada pada ikan' },
+                { id: 'm4', term: 'Tekstur', definition: 'Sifat permukaan atau keadaan fisik fisik lunak/keras' }
+            ];
+
+            const shuffledTerms = [...pairs].sort(() => Math.random() - 0.5);
+            const shuffledDefs = [...pairs].sort(() => Math.random() - 0.5);
+
+            const content = document.getElementById('gameContent');
+            content.innerHTML = `
+                <div>
+                    <!-- Header -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-700">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-rose-400 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
+                                📖 MISI 4: MATCHING & ANALISIS HOTS
+                            </span>
+                            <h2 class="font-display text-2xl font-bold mt-2 text-white">Bongkar Teks LHO Bandeng Presto</h2>
+                            <p class="text-xs md:text-sm text-slate-300 mt-1">
+                                Bagian A: Pasangkan istilah teknis dengan maknanya yang tepat!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Matching Game Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- Istilah Column -->
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">📌 ISTILAH TEKNIS</h4>
+                            ${shuffledTerms.map(t => `
+                                <button id="term-${t.id}" onclick="selectMatchingTerm('${t.id}')" class="w-full p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left font-display font-semibold text-white transition flex justify-between items-center">
+                                    <span>${t.term}</span>
+                                    <i class="fa-solid fa-circle text-slate-600 text-xs"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+
+                        <!-- Makna Column -->
+                        <div class="space-y-3">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-2">💡 MAKNA / DEFINISI</h4>
+                            ${shuffledDefs.map(d => `
+                                <button id="def-${d.id}" onclick="selectMatchingDef('${d.id}')" class="w-full p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left text-xs md:text-sm text-slate-200 transition flex justify-between items-center">
+                                    <span>${d.definition}</span>
+                                    <i class="fa-solid fa-circle text-slate-600 text-xs"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- HOTS Challenge Question Section (Initially Hidden) -->
+                    <div id="hotsSection" class="hidden bg-slate-800/90 p-5 md:p-6 rounded-3xl border border-amber-500/40 mt-6 animate-pulse-subtle">
+                        <div class="flex items-center gap-2 text-amber-400 font-display font-bold text-base mb-2">
+                            <i class="fa-solid fa-brain text-xl"></i>
+                            <span>TANTANGAN ANALISIS HOTS</span>
+                        </div>
+                        <p class="text-xs md:text-sm text-slate-200 leading-relaxed mb-4">
+                            Dalam teks LHO disebutkan: <em>"Bandeng presto dimasak dengan <strong>tekanan</strong> tinggi."</em><br>
+                            <strong>Mengapa kata "tekanan" lebih tepat digunakan sebagai istilah teknis daripada kata "dorongan"?</strong>
+                        </p>
+                        <div class="space-y-2.5">
+                            <button onclick="checkHOTS(this, false, 'Dorongan terlalu umum dan tidak mengacu pada fisika uap air.')" class="w-full p-3 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-left text-xs md:text-sm text-slate-200 border border-slate-600 transition">
+                                A. Karena kata "dorongan" hanya digunakan untuk makanan berkuah.
+                            </button>
+                            <button onclick="checkHOTS(this, true, 'Tepat! Tekanan mengukur besaran gaya per satuan luas secara ilmiah pada panci tertutup.')" class="w-full p-3 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-left text-xs md:text-sm text-slate-200 border border-slate-600 transition">
+                                B. Karena "tekanan" menjelaskan konsep gaya fisik spesifik uap air pada ruang tertutup dalam pengolahan pangan.
+                            </button>
+                            <button onclick="checkHOTS(this, false, 'Pernyataan ini salah karena keduanya memiliki arti fisika yang berbeda.')" class="w-full p-3 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-left text-xs md:text-sm text-slate-200 border border-slate-600 transition">
+                                C. Karena kata "dorongan" terasa kurang keren bagi penulis LHO.
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Action -->
+                <div class="mt-8 pt-4 border-t border-slate-700/60 flex justify-between items-center">
+                    <div class="text-xs text-slate-400">
+                        Pasangan Cocok: <span id="l4Count" class="font-bold text-rose-400">0</span>/4
+                    </div>
+                    <button id="l4NextBtn" onclick="nextLevel()" class="hidden bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2 animate-bounce">
+                        Lanjut ke Misi 5 Final <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        let selectedTermId = null;
+        let selectedDefId = null;
+
+        function selectMatchingTerm(id) {
+            AudioFX.playClick();
+            if (selectedTermId) {
+                document.getElementById(`term-${selectedTermId}`).classList.remove('ring-2', 'ring-amber-400', 'bg-amber-900/40');
+            }
+            selectedTermId = id;
+            document.getElementById(`term-${id}`).classList.add('ring-2', 'ring-amber-400', 'bg-amber-900/40');
+            checkMatchingPair();
+        }
+
+        function selectMatchingDef(id) {
+            AudioFX.playClick();
+            if (selectedDefId) {
+                document.getElementById(`def-${selectedDefId}`).classList.remove('ring-2', 'ring-sky-400', 'bg-sky-900/40');
+            }
+            selectedDefId = id;
+            document.getElementById(`def-${id}`).classList.add('ring-2', 'ring-sky-400', 'bg-sky-900/40');
+            checkMatchingPair();
+        }
+
+        function checkMatchingPair() {
+            if (selectedTermId && selectedDefId) {
+                if (selectedTermId === selectedDefId) {
+                    // Correct match
+                    const termBtn = document.getElementById(`term-${selectedTermId}`);
+                    const defBtn = document.getElementById(`def-${selectedDefId}`);
+
+                    termBtn.onclick = null;
+                    defBtn.onclick = null;
+
+                    termBtn.className = "w-full p-3.5 rounded-2xl bg-emerald-600 border border-emerald-400 text-white text-left font-display font-bold text-sm flex justify-between items-center";
+                    defBtn.className = "w-full p-3.5 rounded-2xl bg-emerald-600 border border-emerald-400 text-white text-left text-xs md:text-sm flex justify-between items-center";
+
+                    termBtn.innerHTML += `<i class="fa-solid fa-check text-white"></i>`;
+                    defBtn.innerHTML += `<i class="fa-solid fa-check text-white"></i>`;
+
+                    gameState.level4Matches[selectedTermId] = true;
+                    addScore(10);
+                    showFeedback(true, '✅ Pasangan Cocok!', 'Istilah dan definisi berhasil dipasangkan dengan tepat.');
+
+                    selectedTermId = null;
+                    selectedDefId = null;
+
+                    const matchCount = Object.keys(gameState.level4Matches).length;
+                    document.getElementById('l4Count').innerText = matchCount;
+
+                    if (matchCount >= 4) {
+                        document.getElementById('hotsSection').classList.remove('hidden');
+                        document.getElementById('hotsSection').scrollIntoView({ behavior: 'smooth' });
+                    }
+                } else {
+                    // Mismatch
+                    handleMistake('Definisi tersebut kurang pas dengan istilah teknis yang kamu pilih.');
+                    document.getElementById(`term-${selectedTermId}`).classList.remove('ring-2', 'ring-amber-400', 'bg-amber-900/40');
+                    document.getElementById(`def-${selectedDefId}`).classList.remove('ring-2', 'ring-sky-400', 'bg-sky-900/40');
+                    selectedTermId = null;
+                    selectedDefId = null;
+                }
+            }
+        }
+
+        function checkHOTS(btn, isCorrect, explanation) {
+            AudioFX.playClick();
+            if (isCorrect) {
+                btn.className = "w-full p-3 rounded-xl bg-emerald-600 border border-emerald-400 text-left text-xs md:text-sm text-white font-bold";
+                let bonus = gameState.levelMistakes === 0 ? 30 : 0;
+                addScore(20 + bonus);
+                AudioFX.playLevelUp();
+                showFeedback(true, '🎉 HEBAT! ANALISIS KELAS TINGGI!', explanation);
+                document.getElementById('l4NextBtn').classList.remove('hidden');
+            } else {
+                btn.className = "w-full p-3 rounded-xl bg-rose-600/50 border border-rose-400 text-left text-xs md:text-sm text-white";
+                handleMistake(explanation);
+            }
+        }
+
+        function renderLevel5() {
+            gameState.currentLevel = 5;
+            gameState.levelMistakes = 0;
+            gameState.level5PuzzlesSolved = 0;
+            gameState.level5Passcode = [];
+            updateHUD();
+
+            const puzzles = [
+                {
+                    q: "Puzzle 1: Manakah kata dalam kalimat LHO berikut yang berfungsi sebagai Istilah Teknis pengolahan?",
+                    sentence: '"Proses sterilisasi dilakukan agar bakteri merugikan terbasmi total."',
+                    options: [
+                        { text: "dilakukan", val: "A", correct: false },
+                        { text: "sterilisasi", val: "3", correct: true, code: "3", exp: "Sterilisasi adalah istilah teknis pembebasan dari kuman." },
+                        { text: "total", val: "C", correct: false }
+                    ]
+                },
+                {
+                    q: "Puzzle 2: Apa makna paling tepat dari istilah 'Suhu' dalam pengolahan Bandeng Presto?",
+                    sentence: "",
+                    options: [
+                        { text: "Derajat panas yang diukur spesifik untuk melunakkan duri", val: "B", correct: true, code: "B", exp: "Suhu mengukur derajat panas secara pasti." },
+                        { text: "Perasaan panas saat menyentuh piring sajian", val: "X", correct: false },
+                        { text: "Bumbu dapur yang memberikan cita rasa manis", val: "Y", correct: false }
+                    ]
+                },
+                {
+                    q: "Puzzle 3: Kalimat manakah yang menggunakan istilah teknis 'Tekstur' secara benar?",
+                    sentence: "",
+                    options: [
+                        { text: "Tekstur ikan presto ini terasa sangat merdu di telinga.", val: "N", correct: false },
+                        { text: "Tekstur daging bandeng presto menjadi lembut setelah dimasak tekanan tinggi.", val: "P", correct: true, code: "P", exp: "Tekstur mengacu pada kondisi fisik permukaan daging." },
+                        { text: "Saya membeli dua tekstur bandeng di pasar tradisional.", val: "M", correct: false }
+                    ]
+                },
+                {
+                    q: "Puzzle 4: Seorang siswa menulis: 'Bandeng presto rasanya gurih sekali'. Mengapa 'gurih' BUKAN istilah teknis?",
+                    sentence: "",
+                    options: [
+                        { text: "Karena kata gurih terlalu panjang untuk ditulis.", val: "1", correct: false },
+                        { text: "Karena gurih merupakan impresi subjektif rasa, bukan istilah ilmiah proses.", val: "8", correct: true, code: "8", exp: "Gurih adalah opini tangkapan lidah umum." },
+                        { text: "Karena kata gurih berasal dari bahasa asing.", val: "9", correct: false }
+                    ]
+                },
+                {
+                    q: "Puzzle 5: Lengkapi kalimat LHO: 'Teknik pengolahan bertekanan tinggi ini menjamin kandungan _____ ikan tetap terjaga.'",
+                    sentence: "",
+                    options: [
+                        { text: "Protein", val: "T", correct: true, code: "T", exp: "Protein adalah istilah teknis zat gizi utama ikan." },
+                        { text: "Kelezatan", val: "K", correct: false },
+                        { text: "Aroma", val: "R", correct: false }
+                    ]
+                }
+            ];
+
+            const content = document.getElementById('gameContent');
+            content.innerHTML = `
+                <div>
+                    <!-- Header -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-4 border-b border-slate-700">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                                🔐 MISI FINAL: ESCAPE ROOM KODE RAHASIA
+                            </span>
+                            <h2 class="font-display text-2xl font-bold mt-2 text-white">Bongkar Brankas Rahasia Bandeng Presto</h2>
+                            <p class="text-xs md:text-sm text-slate-300 mt-1">
+                                Selesaikan 5 puzzle teka-teki bahasa untuk mendapatkan 5 Karakter Kode Rahasia!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Main Grid: Puzzles & Passcode Safe -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Puzzles List Column (2 Columns) -->
+                        <div class="lg:col-span-2 space-y-4" id="puzzleContainer">
+                            ${puzzles.map((p, idx) => `
+                                <div id="puzzle-card-${idx}" class="p-4 md:p-5 rounded-2xl bg-slate-800/80 border border-slate-700 ${idx !== 0 ? 'opacity-50 pointer-events-none' : ''}">
+                                    <div class="flex items-center gap-2 mb-2 text-amber-400 font-display font-bold text-sm">
+                                        <i class="fa-solid fa-puzzle-piece"></i>
+                                        <span>TEKA-TEKI ${idx + 1}</span>
+                                    </div>
+                                    <p class="text-xs md:text-sm text-slate-200 font-semibold mb-1">${p.q}</p>
+                                    ${p.sentence ? `<p class="text-xs italic text-sky-300 bg-slate-900/60 p-2 rounded-lg mb-3">${p.sentence}</p>` : ''}
+                                    
+                                    <div class="space-y-2 mt-3">
+                                        ${p.options.map(o => `
+                                            <button onclick="solveLevel5Puzzle(${idx}, ${o.correct}, '${o.code || ''}', '${o.exp}', this)" 
+                                                class="w-full p-2.5 rounded-xl bg-slate-700/70 hover:bg-slate-600 text-left text-xs text-slate-200 border border-slate-600 transition flex items-center justify-between">
+                                                <span>${o.text}</span>
+                                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400">[ ${o.val} ]</span>
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Vault Safe Keypad Box (1 Column) -->
+                        <div class="glass-card p-5 rounded-3xl border border-slate-700 flex flex-col items-center justify-between">
+                            <div class="text-center w-full">
+                                <div class="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl mx-auto mb-3 border border-amber-500/30">
+                                    <i class="fa-solid fa-vault"></i>
+                                </div>
+                                <h3 class="font-display font-bold text-lg text-white">BRANKAS DETEKTIF</h3>
+                                <p class="text-xs text-slate-400 mt-1">Kumpulkan 5 Digit Kode Rahasia</p>
+                            </div>
+
+                            <!-- Display Screen -->
+                            <div class="my-6 w-full bg-slate-950 p-4 rounded-2xl border border-slate-800 text-center tracking-widest font-mono text-2xl md:text-3xl font-bold text-amber-400 shadow-inner flex justify-center gap-2">
+                                <span id="code-0" class="w-8 h-10 border-b-2 border-slate-700 flex items-center justify-center">_</span>
+                                <span id="code-1" class="w-8 h-10 border-b-2 border-slate-700 flex items-center justify-center">_</span>
+                                <span id="code-2" class="w-8 h-10 border-b-2 border-slate-700 flex items-center justify-center">_</span>
+                                <span id="code-3" class="w-8 h-10 border-b-2 border-slate-700 flex items-center justify-center">_</span>
+                                <span id="code-4" class="w-8 h-10 border-b-2 border-slate-700 flex items-center justify-center">_</span>
+                            </div>
+
+                            <!-- Unlock Vault Button -->
+                            <button id="unlockSafeBtn" onclick="unlockSafeVault()" disabled class="w-full bg-slate-800 text-slate-500 font-display font-bold py-3 rounded-2xl border border-slate-700 transition cursor-not-allowed flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-lock"></i> UNKUNCI BRANKAS
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+        function solveLevel5Puzzle(pIdx, isCorrect, code, exp, btn) {
+            AudioFX.playClick();
+            if (isCorrect) {
+                btn.className = "w-full p-2.5 rounded-xl bg-emerald-600 border border-emerald-400 text-left text-xs text-white font-bold flex items-center justify-between";
+                addScore(10);
+                showFeedback(true, `🔑 KODE RAHASIA DISEDIAKAN: [ ${code} ]`, exp);
+
+                // Add code digit to passcode display
+                gameState.level5Passcode.push(code);
+                document.getElementById(`code-${pIdx}`).innerText = code;
+                document.getElementById(`code-${pIdx}`).classList.add('text-emerald-400', 'border-emerald-400');
+
+                // Disable solved puzzle card
+                const currentCard = document.getElementById(`puzzle-card-${pIdx}`);
+                currentCard.classList.add('opacity-80');
+                const btns = currentCard.querySelectorAll('button');
+                btns.forEach(b => b.onclick = null);
+
+                // Enable next puzzle card
+                if (pIdx + 1 < 5) {
+                    const nextCard = document.getElementById(`puzzle-card-${pIdx + 1}`);
+                    nextCard.classList.remove('opacity-50', 'pointer-events-none');
+                    nextCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
+                gameState.level5PuzzlesSolved++;
+
+                if (gameState.level5PuzzlesSolved >= 5) {
+                    const safeBtn = document.getElementById('unlockSafeBtn');
+                    safeBtn.disabled = false;
+                    safeBtn.className = "w-full bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-900 font-display font-bold py-3.5 rounded-2xl shadow-xl transition cursor-pointer animate-bounce flex items-center justify-center gap-2 text-base";
+                    safeBtn.innerHTML = `<i class="fa-solid fa-key"></i> BUKA BRANKAS KODE!`;
+                }
+            } else {
+                btn.className = "w-full p-2.5 rounded-xl bg-rose-600/50 border border-rose-400 text-left text-xs text-white";
+                handleMistake(exp);
+            }
+        }
+
+        function unlockSafeVault() {
+            AudioFX.playLevelUp();
+            let bonus = gameState.levelMistakes === 0 ? 30 : 0;
+            addScore(20 + bonus);
+            renderVictoryScreen();
+        }
+
+        function renderVictoryScreen() {
+            createConfetti();
+            AudioFX.playLevelUp();
+
+            const accuracy = Math.round((gameState.totalCorrectAnswers / Math.max(1, gameState.totalCorrectAnswers + (3 - gameState.lives))) * 100);
+
+            let rank = "🌱 Detektif Pemula";
+            let badgeIcon = "fa-seedling";
+            let rankColor = "text-emerald-400";
+
+            if (gameState.score >= 200) {
+                rank = "🏆 DETEKTIF BAHASA AHLI";
+                badgeIcon = "fa-crown";
+                rankColor = "text-amber-400";
+            } else if (gameState.score >= 150) {
+                rank = "⭐ DETEKTIF ANDAL";
+                badgeIcon = "fa-star";
+                rankColor = "text-sky-400";
+            } else if (gameState.score >= 100) {
+                rank = "🔎 DETEKTIF MUDA";
+                badgeIcon = "fa-magnifying-glass";
+                rankColor = "text-indigo-400";
+            }
+
+            const content = document.getElementById('gameContent');
+            content.innerHTML = `
+                <div class="text-center py-6 max-w-2xl mx-auto space-y-6 animate-float">
+                    
+                    <!-- Trophy Badge Header -->
+                    <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-900 text-5xl mx-auto shadow-2xl border-4 border-amber-200">
+                        <i class="fa-solid ${badgeIcon}"></i>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-widest text-amber-400 bg-amber-500/10 px-4 py-1.5 rounded-full border border-amber-500/20">
+                            🎉 MISI DETEKTIF BERHASIL DIBONGKAR!
+                        </span>
+                        <h2 class="font-display text-3xl md:text-4xl font-bold mt-3 text-white">
+                            SELAMAT, DETEKTIF HEBAT!
+                        </h2>
+                        <p class="text-xs md:text-sm text-slate-300 mt-2 leading-relaxed">
+                            Kamu telah berhasil membongkar rahasia bahasa dalam Laporan Hasil Observasi (LHO) Bandeng Presto!
+                        </p>
+                    </div>
+
+                    <!-- Mission Report Card -->
+                    <div class="glass-card p-6 rounded-3xl border border-slate-700 text-left space-y-4">
+                        <h4 class="font-display font-bold text-sky-400 text-base border-b border-slate-700 pb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-check"></i> HASIL RAPOR MISI DETEKTIF
+                        </h4>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                                <span class="text-xs text-slate-400 block">TOTAL SKOR</span>
+                                <span class="font-display font-bold text-2xl text-amber-400">${gameState.score}</span>
+                            </div>
+                            <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                                <span class="text-xs text-slate-400 block">SISA NYAWA</span>
+                                <span class="font-display font-bold text-2xl text-rose-400">${gameState.lives}/3</span>
+                            </div>
+                            <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                                <span class="text-xs text-slate-400 block">ISTILAH TEKNIS</span>
+                                <span class="font-display font-bold text-2xl text-emerald-400">12 Ditemukan</span>
+                            </div>
+                            <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                                <span class="text-xs text-slate-400 block">AKURASI</span>
+                                <span class="font-display font-bold text-2xl text-sky-400">${accuracy}%</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700 flex items-center justify-between">
+                            <span class="text-xs text-slate-300">Gelar Penghargaan Detektif:</span>
+                            <span class="font-display font-bold ${rankColor} text-base">${rank}</span>
+                        </div>
+                    </div>
+
+                    <!-- Summary Learning Points -->
+                    <div class="bg-slate-800/50 p-5 rounded-2xl border border-slate-700 text-left text-xs md:text-sm text-slate-300 space-y-2">
+                        <strong class="text-amber-300 block mb-1">📚 Rangkuman Pembelajaran Hari Ini:</strong>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>Memahami bahwa <strong>istilah teknis</strong> adalah kata khusus bidang ilmiah/tertentu.</li>
+                            <li>Mampu membedakan istilah teknis (seperti <em>tekanan, suhu, presto</em>) dari kata umum (seperti <em>gurih, lezat</em>).</li>
+                            <li>Mengidentifikasi penggunaan istilah teknis dalam kalimat Teks Laporan Hasil Observasi (LHO).</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap justify-center gap-3 pt-2">
+                        <button onclick="restartGame()" class="bg-sky-600 hover:bg-sky-500 text-white font-display font-bold px-6 py-3 rounded-2xl shadow-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-right"></i> Main Lagi
+                        </button>
+                        <button onclick="toggleMaterialModal(true)" class="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 font-display font-bold px-6 py-3 rounded-2xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-book"></i> Pelajari Materi
+                        </button>
+                    </div>
+
+                </div>
+            `;
+        }
+
+        function renderGameOver() {
+            AudioFX.playWrong();
+            const content = document.getElementById('gameContent');
+            content.innerHTML = `
+                <div class="text-center py-12 max-w-lg mx-auto space-y-6">
+                    <div class="w-20 h-20 rounded-3xl bg-rose-500/20 text-rose-500 flex items-center justify-center text-4xl mx-auto border border-rose-500/30">
+                        <i class="fa-solid fa-[#fa-heart-crack]"></i>
+                        <i class="fa-solid fa-heart-crack"></i>
+                    </div>
+
+                    <div>
+                        <h2 class="font-display text-3xl font-bold text-rose-400">MISI TERHENTI!</h2>
+                        <p class="text-xs md:text-sm text-slate-300 mt-2">
+                            Nyawa detektifmu telah habis. Jangan berkecil hati, seorang detektif hebat selalu belajar dari kegagalan!
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700 text-center">
+                        <span class="text-xs text-slate-400 block">Skor Terakhir</span>
+                        <span class="font-display font-bold text-2xl text-amber-400">${gameState.score}</span>
+                    </div>
+
+                    <div class="flex justify-center gap-4">
+                        <button onclick="restartGame()" class="bg-sky-600 hover:bg-sky-500 text-white font-display font-bold px-6 py-3 rounded-2xl shadow-lg transition flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-right"></i> Coba Misi Lagi
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function nextLevel() {
+            closeFeedback();
+            if (gameState.currentLevel === 1) renderLevel2();
+            else if (gameState.currentLevel === 2) renderLevel3();
+            else if (gameState.currentLevel === 3) renderLevel4();
+            else if (gameState.currentLevel === 4) renderLevel5();
+        }
+
+        function restartGame() {
+            gameState.currentLevel = 1;
+            gameState.score = 0;
+            gameState.lives = 3;
+            gameState.totalCorrectAnswers = 0;
+            gameState.totalAttempts = 0;
+            gameState.levelMistakes = 0;
+            closeFeedback();
+            renderLevel1();
+        }
+
+        // Initialize Game on Window Load
+        window.onload = function() {
+            renderLevel1();
+        };
+    </script>
+</body>
+</html>
